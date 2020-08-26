@@ -49,7 +49,6 @@ struct wk2124_uart
 
 /* 用于接收中断的信号量 */
 static struct rt_semaphore irq_sem;
-uint8_t wk2124_irq_flag = 0;
 
 static rt_err_t wk2124_configure(struct rt_serial_device *serial,
                               struct serial_configure *cfg)
@@ -300,34 +299,7 @@ void WK2124_UART4_IRQHandler(void)
 /* 中断回调函数 */
 void WK2124_IRQHandler(void *args)
 {
-//     volatile uint8_t g_irq_stat = 0; 
-
-//     /*使能子串口1,2,3,4的时钟*/
-//     g_irq_stat = EXHW_WK2124_Read_Reg(wk2124_device, GIFR);
-//     if(g_irq_stat & (1 << 0)){//子串口 1 有中断
-// #if defined(PKG_USING_UART_SWK1)
-//         WK2124_UART1_IRQHandler();
-// #endif
-//     }
-//     if(g_irq_stat & (1 << 1)){//子串口 2 有中断
-// #if defined(PKG_USING_UART_SWK2)
-//         WK2124_UART2_IRQHandler();
-// #endif
-//     }
-//     if(g_irq_stat & (1 << 2)){//子串口 3 有中断
-// #if defined(PKG_USING_UART_SWK3)
-//         WK2124_UART3_IRQHandler();
-// #endif
-//     }
-//     if(g_irq_stat & (1 << 3)){//子串口 4 有中断
-// #if defined(PKG_USING_UART_SWK4)
-//         WK2124_UART4_IRQHandler();
-// #endif
-//     }
-
     rt_sem_release(&irq_sem);
-
-    // wk2124_irq_flag = 1;
 }
 
 static void wk2124_irq_thread_entry(void *parameter)
@@ -337,11 +309,7 @@ static void wk2124_irq_thread_entry(void *parameter)
     while (1)
     {
         rt_sem_take(&irq_sem, RT_WAITING_FOREVER);
-        // if (!wk2124_irq_flag) {
-        //     continue;
-        // }
-        // wk2124_irq_flag = 0;
-        
+
         /*使能子串口1,2,3,4的时钟*/
         g_irq_stat = EXHW_WK2124_Read_Reg(wk2124_device, GIFR);
         if(g_irq_stat & (1 << 0)){//子串口 1 有中断
