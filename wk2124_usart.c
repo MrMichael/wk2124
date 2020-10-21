@@ -13,28 +13,12 @@
 #ifdef PKG_USING_WK2124
 
 //WK2124晶振频率，单位Hz
-#ifdef WK2124_Fosc_1843200
-    #define WK2124_Fosc     1843200     
-#elif defined WK2124_Fosc_3686400
-    #define WK2124_Fosc     3686400
-#elif defined WK2124_Fosc_7372800
-    #define WK2124_Fosc     7372800
-#elif defined WK2124_Fosc_11059200
-    #define WK2124_Fosc     11059200
-#elif defined WK2124_Fosc_14745600
-    #define WK2124_Fosc     14745600
-#elif defined WK2124_Fosc_16000000
-    #define WK2124_Fosc     16000000
-#elif defined WK2124_Fosc_24000000
-    #define WK2124_Fosc     24000000
-#elif defined WK2124_Fosc_32000000
-    #define WK2124_Fosc     32000000
-#else
+#ifndef WK2124_Fosc
     #define WK2124_Fosc     11059200     
 #endif
 
 #ifndef WK2124_IRQ_PIN
-    #define WK2124_IRQ_PIN		17  /* PB1 */
+    #define WK2124_IRQ_PIN        17  /* PB1 */
 #endif
 
 struct rt_spi_device *wk2124_device = RT_NULL;
@@ -42,8 +26,8 @@ struct rt_spi_device *wk2124_device = RT_NULL;
 /* wk2124 uart driver */
 struct wk2124_uart 
 {
-    int swk_index; 
-    int irq_enable;
+    uint8_t swk_index; 
+    uint8_t irq_enable;
     struct rt_spi_device *spi_device;
 };
 
@@ -56,17 +40,16 @@ static rt_err_t wk2124_configure(struct rt_serial_device *serial,
     struct wk2124_uart *uart;
     uint16_t baudrate;
     uint8_t baudrate_h, baudrate_l, baudrate_dec, spage0_lcr;
-    float tmp;
 
     RT_ASSERT(serial != RT_NULL);
     RT_ASSERT(cfg != RT_NULL);
     uart = (struct wk2124_uart *)serial->parent.user_data;
 
     /*切换到PAGE0页中的子串口寄存器组 */
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
 
-	/*子串口 1 控制寄存器 */
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SCR(uart->swk_index),0x03);	//子串口 发送使能  接收使能
+    /*子串口 1 控制寄存器 */
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SCR(uart->swk_index),0x00); //子串口 发送使能  接收使能
 
     spage0_lcr = 0;
     if (cfg->stop_bits > 0) {
@@ -82,38 +65,36 @@ static rt_err_t wk2124_configure(struct rt_serial_device *serial,
     if (cfg->data_bits == 9) {
         spage0_lcr |= 0x08;
     }
-	/*子串口 配置寄存器*/
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_LCR(uart->swk_index),spage0_lcr);	//子串口 正常输出,普通模式,8位数据位,0校验,1位停止位
+    /*子串口 配置寄存器*/
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_LCR(uart->swk_index),spage0_lcr);    //子串口 正常输出,普通模式,8位数据位,0校验,1位停止位
 
-	/*子串口 FIFO控制寄存器*/
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_FCR(uart->swk_index),0x0F);	//子串口 发送触发点,接收触发点 
-																								//使能 发送,接收FIFO 复位发送接收FIFO
-	/*子串口 中断使能寄存器*/
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SIER(uart->swk_index),0x00); //子串口 禁止接收FIFO数据错误中断
-																								//禁止发送FIFO空中断
-																								//禁止发送FIFO触点中断
-																								//禁止接收FIFO接收超时中断
-																								//禁止接收FIFO接收触点中断
+    /*子串口 FIFO控制寄存器*/
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_FCR(uart->swk_index),0x03);    //子串口 发送触发点,接收触发点 
+                                                                                  //使能 发送,接收FIFO 复位发送接收FIFO
+    /*子串口 中断使能寄存器*/
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SIER(uart->swk_index),0x00); //子串口 禁止接收FIFO数据错误中断
+                                                                                                //禁止发送FIFO空中断
+                                                                                                //禁止发送FIFO触点中断
+                                                                                                //禁止接收FIFO接收超时中断
+                                                                                                //禁止接收FIFO接收触点中断
 
     baudrate = WK2124_Fosc/cfg->baud_rate/16;
     baudrate_h = baudrate/0x100;
     baudrate_l = baudrate%0x100 -1;
-    tmp = WK2124_Fosc/cfg->baud_rate/16;
-    tmp -= baudrate;
-    baudrate_dec = (uint8_t)(tmp*16);
+    baudrate_dec = (uint8_t)(((WK2124_Fosc/cfg->baud_rate/16.0f) - baudrate)*16);
 
     /*切换到PAGE1页中的子串口寄存器组 */
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x01);
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x01);
 
-	/*子串口1 波特率配置寄存器高字节 [Reg = 11.0592/(115200*16) = 6] */
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE1_BAUD1(uart->swk_index),baudrate_h);
-	/*子串口1 波特率配置寄存器低字节 */
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE1_BAUD0(uart->swk_index),baudrate_l);
-	/*子串口1 波特率配置寄存器小数部分*/
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE1_PRES(uart->swk_index),baudrate_dec);
+    /*子串口1 波特率配置寄存器高字节 [Reg = 11.0592/(115200*16) = 6] */
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE1_BAUD1(uart->swk_index),baudrate_h);
+    /*子串口1 波特率配置寄存器低字节 */
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE1_BAUD0(uart->swk_index),baudrate_l);
+    /*子串口1 波特率配置寄存器小数部分*/
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE1_PRES(uart->swk_index),baudrate_dec);
 
-	/*切换到PAGE0页中的子串口寄存器组 */
-	EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
+    /*切换到PAGE0页中的子串口寄存器组 */
+    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
 
     return RT_EOK;
 }
@@ -129,25 +110,35 @@ static rt_err_t wk2124_control(struct rt_serial_device *serial,
     case RT_DEVICE_CTRL_CLR_INT:
         // /* disable rx irq */
         /*切换到PAGE0页中的子串口寄存器组 */
-	    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
+        /*子串口 控制寄存器 */
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SCR(uart->swk_index),0x00);	//子串口 发送不使能  接收不使能
+        /*子串口 FIFO控制寄存器*/
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_FCR(uart->swk_index),0x03);	//子串口 发送触发点,接收触发点 
+                                                                                    //不使能 发送,接收FIFO 复位发送接收FIFO
         /*子串口 中断使能寄存器*/
-	    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SIER(uart->swk_index),0x00); //子串口 禁止接收FIFO数据错误中断
-																								//禁止发送FIFO空中断
-																								//禁止发送FIFO触点中断
-																								//禁止接收FIFO接收超时中断
-																								//禁止接收FIFO接收触点中断
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SIER(uart->swk_index),0x00); //子串口 禁止接收FIFO数据错误中断
+                                                                                    //禁止发送FIFO空中断
+                                                                                    //禁止发送FIFO触点中断
+                                                                                    //禁止接收FIFO接收超时中断
+                                                                                    //禁止接收FIFO接收触点中断
         uart->irq_enable = 0;
         break;
     case RT_DEVICE_CTRL_SET_INT:
         // /* enable rx irq */
         /*切换到PAGE0页中的子串口寄存器组 */
-	    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE(uart->swk_index),0x00);
+        /*子串口 控制寄存器 */
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SCR(uart->swk_index),0x03);	//子串口 发送使能  接收使能
+        /*子串口 FIFO控制寄存器*/
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_FCR(uart->swk_index),0x0F);	//子串口 发送触发点,接收触发点 
+                                                                                    //使能 发送,接收FIFO 复位发送接收FIFO
         /*子串口 中断使能寄存器*/
-	    EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SIER(uart->swk_index),0x83); //子串口 使能接收FIFO数据错误中断
-																								//禁止发送FIFO空中断
-																								//禁止发送FIFO触点中断
-																								//使能接收FIFO接收超时中断
-																								//使能接收FIFO接收触点中断
+        EXHW_WK2124_Write_Reg(uart->spi_device, SPAGE0_SIER(uart->swk_index),0x83); //子串口 使能接收FIFO数据错误中断
+                                                                                    //禁止发送FIFO空中断
+                                                                                    //禁止发送FIFO触点中断
+                                                                                    //使能接收FIFO接收超时中断
+                                                                                    //使能接收FIFO接收触点中断
         uart->irq_enable = 1;
         break;
     }
@@ -201,20 +192,20 @@ void WK2124_UART1_IRQHandler(void)
 {
     struct wk2124_uart *uart;
     uart = &uart_swk1;
-	volatile uint8_t uart_irq_stat = 0; 
+    volatile uint8_t uart_irq_stat = 0; 
     RT_ASSERT(uart != RT_NULL);
     RT_ASSERT(&serialswk1 != RT_NULL);
     RT_ASSERT(uart->spi_device->parent.type == RT_Device_Class_SPIDevice);
-	
+    
     if (uart->irq_enable == 0) {
        return;
     }
-	/*判断串口的中断类型*/
-	uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
+    /*判断串口的中断类型*/
+    uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
     //子串口接收FIFO触点中断标志 ， 子串口接收FIFO超时中断标志
-	if(uart_irq_stat & (3 << 0)) {	
+    if(uart_irq_stat & (3 << 0)) {    
         rt_hw_serial_isr(&serialswk1, RT_SERIAL_EVENT_RX_IND);
-	}
+    }
 }
 #endif /* PKG_USING_UART_SWK1 */
 
@@ -226,21 +217,21 @@ void WK2124_UART2_IRQHandler(void)
 {
     struct wk2124_uart *uart;
     uart = &uart_swk2;
-	volatile uint8_t uart_irq_stat = 0; 
+    volatile uint8_t uart_irq_stat = 0; 
 
     RT_ASSERT(uart != RT_NULL);
     RT_ASSERT(&serialswk2 != RT_NULL);
     RT_ASSERT(uart->spi_device->parent.type == RT_Device_Class_SPIDevice);
-	
+    
     if (uart->irq_enable == 0) {
        return;
     }
-	/*判断串口的中断类型*/
-	uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
+    /*判断串口的中断类型*/
+    uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
     //子串口接收FIFO触点中断标志 ， 子串口接收FIFO超时中断标志
-	if(uart_irq_stat & (3 << 0)) {	
+    if(uart_irq_stat & (3 << 0)) {    
         rt_hw_serial_isr(&serialswk2, RT_SERIAL_EVENT_RX_IND);
-	}
+    }
 }
 #endif /* PKG_USING_UART_SWK2 */
 
@@ -252,21 +243,21 @@ void WK2124_UART3_IRQHandler(void)
 {
     struct wk2124_uart *uart;
     uart = &uart_swk3;
-	volatile uint8_t uart_irq_stat = 0; 
+    volatile uint8_t uart_irq_stat = 0; 
 
     RT_ASSERT(uart != RT_NULL);
     RT_ASSERT(&serialswk3 != RT_NULL);
     RT_ASSERT(uart->spi_device->parent.type == RT_Device_Class_SPIDevice);
 
-	if (uart->irq_enable == 0) {
+    if (uart->irq_enable == 0) {
        return;
     }
-	/*判断串口的中断类型*/
-	uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
+    /*判断串口的中断类型*/
+    uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
     //子串口接收FIFO触点中断标志 ， 子串口接收FIFO超时中断标志
-	if(uart_irq_stat & (3 << 0)) {	
+    if(uart_irq_stat & (3 << 0)) {    
         rt_hw_serial_isr(&serialswk3, RT_SERIAL_EVENT_RX_IND);
-	}
+    }
 }
 #endif /* PKG_USING_UART_SWK3 */
 
@@ -278,7 +269,7 @@ void WK2124_UART4_IRQHandler(void)
 {
     struct wk2124_uart *uart;
     uart = &uart_swk4;
-	volatile uint8_t uart_irq_stat = 0; 
+    volatile uint8_t uart_irq_stat = 0; 
 
     RT_ASSERT(uart != RT_NULL);
     RT_ASSERT(&serialswk4 != RT_NULL);
@@ -287,12 +278,12 @@ void WK2124_UART4_IRQHandler(void)
     if (uart->irq_enable == 0) {
        return;
     }
-	/*判断串口的中断类型*/
-	uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
+    /*判断串口的中断类型*/
+    uart_irq_stat = EXHW_WK2124_Read_Reg(uart->spi_device, SPAGE0_SIFR(uart->swk_index));
     //子串口接收FIFO触点中断标志 ， 子串口接收FIFO超时中断标志
-	if(uart_irq_stat & (3 << 0)) {	
+    if(uart_irq_stat & (3 << 0)) {    
         rt_hw_serial_isr(&serialswk4, RT_SERIAL_EVENT_RX_IND);
-	}
+    }
 }
 #endif /* PKG_USING_UART_SWK4 */
 
