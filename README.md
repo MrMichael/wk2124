@@ -52,16 +52,7 @@ RT-Thread online packages
             WK2124 device configure  --->
             	(spi2dev) SPI device name
             	(17) IRQ pin number
-            	Select crystal frequency (11.0592MHz)  --->
-                        ( ) 1.8432MHz
-                        ( ) 3.6864MHz
-                        ( ) 7.3728MHz
-                        (X ) 11.0592MHz
-                        ( ) 14.7456MHz
-                        ( ) 8MHz
-                        ( ) 16MHz
-                        ( ) 24MHz
-                        ( ) 32MHz
+            	(11059200) Set crystal frequency. Unit Hz
             Version (latest)  --->
 ```
 
@@ -75,7 +66,7 @@ RT-Thread online packages
 - WK2124 device configure：配置使用设备的参数
   - SPI device name：配置使用 SPI 的设备名称（注意需设置为**非 SPI 总线设备**）
   - IRQ pin number：配置设备连接的中断引脚号（根据实际使用引脚号修改）
-  - Select crystal frequency：wk2124硬件电路的晶振频率（影响串口波特率）
+  - Set crystal frequency：wk2124硬件电路的晶振频率（影响串口波特率）
 - Version：配置软件包版本，默认最新版本。
 
 然后让 RT-Thread 的包管理器自动更新，或者使用 `pkgs --update` 命令更新包到 BSP 中。
@@ -116,6 +107,7 @@ uartswk1--4串行字符设备支持轮询和中断接收两种模式（不支持
 ## 4 注意事项
 
 - 获取软件包时，需要注意正确配置使用的 SPI 设备名称、中断引脚号和芯片晶振频率；
+- 推荐使用最新版，V1.0.0波特率计算存在BUG，且wk2124的串口关闭不彻底。
 
 
 
