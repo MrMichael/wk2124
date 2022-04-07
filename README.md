@@ -11,17 +11,18 @@ WK2124 软件包为串口设备资源不足的产品提供串口扩展的方法�
 
 ```shell
 wk2124-latest/
-├── ChangeLog.md		# 修改记录
+├── ChangeLog.md				# 修改记录
 ├── LICENSE						# 软件包许可证
-├── README.md			  # 软件包使用说明
-├── sample						 # 串口使用程序样例
+├── README.md					# 软件包使用说明
+├── sample						# 串口使用程序样例
 │   ├── uart_int_sample.c		# 中断模式
-│   └── uart_sample.c				# 轮询模式
-├── SConscript				  # RT-Thread 默认的构建脚本
-├── wk2124s.c				  # wk2124 驱动
-├── wk2124s.h				  # wk2124 驱动头文件
-├── wk2124_usart.c      # wk2124 spi及uart驱动文件
-└── wk2124_usart.h	    # wk2124 spi及uart驱动头文件
+│   └── uart_sample.c			# 轮询模式
+├── SConscript					# RT-Thread 默认的构建脚本
+├── wk2124s.c					# wk2124 驱动
+├── wk2124s.h					# wk2124 驱动头文件
+├── wk2124_usart.c				# wk2124 spi及uart驱动文件
+├── wk2124_usart_v2.c			# wk2124 spi及uart_v2驱动文件
+└── wk2124_usart.h				# wk2124 spi及uart驱动头文件
 ```
 
 ### 1.2 许可证
@@ -108,7 +109,7 @@ uartswk1--4串行字符设备支持轮询和中断接收两种模式（不支持
 
 - 获取软件包时，需要注意正确配置使用的 SPI 设备名称、中断引脚号和芯片晶振频率；
 - 推荐使用最新版，V1.0.0波特率计算存在BUG，且wk2124的串口关闭不彻底。
-
+- _v2版本为适配RT-Thread serial_v2版本。
 
 
 ## 5 联系方式
