@@ -13,13 +13,31 @@
 #ifdef RT_USING_SERIAL_V1
 #ifdef PKG_USING_WK2124
 
-//WK2124晶振频率，单位Hz
-#ifndef WK2124_Fosc
-    #define WK2124_Fosc     11059200     
+// WK2124晶振频率，单位Hz
+#if defined(WK2124_Fosc_1843200)
+    #define WK2124_Fosc 1843200
+#elif defined(WK2124_Fosc_3686400)
+    #define WK2124_Fosc 3686400
+#elif defined(WK2124_Fosc_7372800)
+    #define WK2124_Fosc 7372800
+#elif defined(WK2124_Fosc_11059200)
+    #define WK2124_Fosc 11059200
+#elif defined(WK2124_Fosc_14745600)
+    #define WK2124_Fosc 14745600
+#elif defined(WK2124_Fosc_8000000)
+    #define WK2124_Fosc 8000000
+#elif defined(WK2124_Fosc_16000000)
+    #define WK2124_Fosc 16000000
+#elif defined(WK2124_Fosc_24000000)
+    #define WK2124_Fosc 24000000
+#elif defined(WK2124_Fosc_32000000)
+    #define WK2124_Fosc 32000000
+#else
+    #define WK2124_Fosc 11059200
 #endif
 
 #ifndef WK2124_IRQ_PIN
-    #define WK2124_IRQ_PIN        17  /* PB1 */
+    #define WK2124_IRQ_PIN        17
 #endif
 
 struct rt_spi_device *wk2124_device = RT_NULL;
@@ -35,8 +53,7 @@ struct wk2124_uart
 /* 用于接收中断的信号量 */
 static struct rt_semaphore irq_sem;
 
-static rt_err_t wk2124_configure(struct rt_serial_device *serial,
-                              struct serial_configure *cfg)
+static rt_err_t wk2124_configure(struct rt_serial_device *serial, struct serial_configure *cfg)
 {
     struct wk2124_uart *uart;
     uint16_t baudrate;
@@ -100,8 +117,7 @@ static rt_err_t wk2124_configure(struct rt_serial_device *serial,
     return RT_EOK;
 }
 
-static rt_err_t wk2124_control(struct rt_serial_device *serial,
-                            int cmd, void *arg)
+static rt_err_t wk2124_control(struct rt_serial_device *serial, int cmd, void *arg)
 {
     struct wk2124_uart *uart;
     RT_ASSERT(serial != RT_NULL);
@@ -507,5 +523,5 @@ int wk2124_device_init(void)
 INIT_ENV_EXPORT(wk2124_device_init);
 
 #endif /* PKG_USING_WK2124 */
-#endif /* RT_USING_SERIAL_V2 */
+#endif /* RT_USING_SERIAL_V1 */
 #endif /* RT_USING_SERIAL */
